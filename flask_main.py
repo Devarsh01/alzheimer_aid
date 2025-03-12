@@ -31,12 +31,26 @@ def home():
 def register():
     if request.method == 'POST':
         username = request.form['username']
-        password = generate_password_hash(request.form['password'])
-        new_user = User(username=username, password=password)
-        db.session.add(new_user)
-        db.session.commit()
-        flash('Registration successful! Please log in.', 'success')
-        return redirect(url_for('login'))
+        password = request.form['password']
+
+        # Check if the username already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Username already taken. Please choose another.', 'danger')
+            return redirect(url_for('register'))
+
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password=hashed_password)
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred. Please try again.', 'danger')
+
     return render_template('register.html')
 
 
